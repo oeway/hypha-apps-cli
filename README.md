@@ -13,6 +13,8 @@ The Hypha Apps CLI (`hypha_apps_cli`) is a command-line tool that allows you to:
 
 The exact CLI implementation can be found in the [hypha-rpc repo](https://github.com/oeway/hypha-rpc/blob/main/python/hypha_rpc/utils/hypha_apps_cli.py).
 
+This CLI is for managing hypha apps and its artifact, for general artifact access, see [hypha-artifact](https://github.com/aicell-lab/hypha-artifact).
+
 ## Prerequisites
 
 Before using the CLI, ensure you have:
@@ -164,141 +166,11 @@ When you specify `--files=./directory`, the CLI will:
    - **Binary files** (`.png`, `.jpg`, `.pdf`, etc.): Base64 encoded
 4. **Upload files** with relative paths preserved
 
-### File Processing Examples
-
-Here's how different file types are handled:
-
-#### Text Files (CSS, HTML, JavaScript, etc.)
-```css
-/* static/style.css - processed as text */
-body { font-family: Arial, sans-serif; }
-```
-→ Stored as: `{"name": "static/style.css", "content": "body { font-family: Arial, sans-serif; }", "format": "text"}`
-
-#### JSON Configuration Files
-```json
-{
-  "app_settings": {
-    "version": "1.0.0",
-    "debug": false
-  }
-}
-```
-→ Stored as: `{"name": "config.json", "content": {...}, "format": "json"}`
-
-#### Binary Files (Images, PDFs, etc.)
-```
-icon.png (binary image file)
-```
-→ Stored as: `{"name": "icon.png", "content": "iVBORw0KGgoAAAANS...", "format": "base64"}`
-
-### Directory Structure Example
-
-Create a directory structure like this:
-
-```
-my-app-files/
-├── static/
-│   ├── style.css          # Text file
-│   ├── script.js          # Text file
-│   └── icon.png           # Binary file (base64 encoded)
-├── templates/
-│   ├── index.html         # Text file
-│   └── error.html         # Text file
-├── data/
-│   ├── config.json        # JSON file (parsed as object)
-│   └── sample-data.csv    # Text file
-└── docs/
-    └── readme.txt         # Text file
-```
-
-### Installation with Files
-
-Install your app with additional files:
-
-```bash
-python -m hypha_rpc.utils.hypha_apps_cli install \
-  --app-id my-web-app \
-  --manifest=manifest.yaml \
-  --source=main.py \
-  --files=my-app-files
-```
-
-### Accessing Files in Your App
-
-Once uploaded, you can access these files in your Hypha app. The exact method depends on your app type, but files are typically accessible through the app's file system or API.
-
-Example in Python:
-```python
-from hypha_rpc import api
-
-# Files are available in your app context
-def setup():
-    # Access uploaded files through the app's file system
-    # Implementation depends on your specific app type
-    pass
-
-api.export({"setup": setup})
-```
-
-### Real-World Use Cases
-
-#### 1. Web Application with Assets
-```bash
-# Upload web assets (CSS, JS, images)
-python -m hypha_rpc.utils.hypha_apps_cli install \
-  --app-id my-dashboard \
-  --manifest=manifest.yaml \
-  --source=app.py \
-  --files=./web-assets
-```
-
-#### 2. Data Processing App with Configuration
-```bash
-# Upload configuration and sample data
-python -m hypha_rpc.utils.hypha_apps_cli install \
-  --app-id data-processor \
-  --manifest=manifest.yaml \
-  --source=processor.py \
-  --files=./config-and-data
-```
-
-#### 3. Machine Learning Model with Assets
-```bash
-# Upload model files, templates, and static assets
-python -m hypha_rpc.utils.hypha_apps_cli install \
-  --app-id ml-demo \
-  --manifest=manifest.yaml \
-  --source=model_app.py \
-  --files=./model-assets
-```
-
-### Testing File Upload
-
-You can test the file upload feature using the provided example files:
-
-```bash
-# Install app with example files
-python -m hypha_rpc.utils.hypha_apps_cli install \
-  --app-id hello-with-files \
-  --manifest=manifest.yaml \
-  --source=main.py \
-  --files=example-files \
-  --overwrite
-```
-
-This will upload:
-- `static/style.css` (text)
-- `static/icon.png` (base64)
-- `templates/index.html` (text)
-- `data/config.json` (JSON object)
 
 ### File Size and Limitations
 
-- **No explicit file size limits** in the CLI, but your Hypha server may have upload limits
-- **Large files** are automatically base64 encoded, which increases size by ~33%
-- **Consider server storage** when uploading many large files
-- **Binary files** like images, videos, or large datasets may be better served from external storage
+**Small files only**: In the CLI, however, since we serialize all the data in one rpc call, it is not recommended to upload large files. The typical use of this is to upload source code files along with some assets.
+**For uploading large files**: You should use [hypha-artifact](https://github.com/aicell-lab/hypha-artifact).
 
 ### Tips and Best Practices
 
