@@ -1,6 +1,6 @@
 from hypha_rpc import api
 
-def setup():
+async def setup():
     print("hello")
 
 api.export({
