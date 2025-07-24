@@ -22,7 +22,7 @@ Before using the CLI, ensure you have:
    ```bash
    pip install "hypha-rpc>=0.20.71"
    ```
-3. Access to a **Hypha server** (e.g., https://ai.imjoy.io or your self-hosted instance)
+3. Access to a **Hypha server** (e.g., https://hypha.aicell.io or your self-hosted instance)
 4. A valid **authentication token** from your Hypha server
 
 ## Environment Setup
@@ -33,7 +33,7 @@ Create a `.env` file in your project root with the following configuration:
 
 ```bash
 # Hypha Server Configuration
-HYPHA_SERVER_URL=https://ai.imjoy.io
+HYPHA_SERVER_URL=https://hypha.aicell.io # or your own server URL
 HYPHA_TOKEN=your_token_here
 HYPHA_WORKSPACE=your_workspace_name
 HYPHA_CLIENT_ID=my-hypha-app-client
@@ -43,11 +43,11 @@ HYPHA_CLIENT_ID=my-hypha-app-client
 
 To get your authentication token:
 
-1. Visit your Hypha server dashboard (e.g., https://ai.imjoy.io)
+1. Visit your Hypha server dashboard (e.g., https://hypha.aicell.io)
 2. Log in to your account
-3. Navigate to your user settings or workspace settings
-4. Find the "API Token" or "Authentication Token" section
-5. Generate a new token or copy your existing token
+3. Go to "My Workspace"
+4. Find the "Development" tab
+5. Generate a new token
 6. Add it to your `.env` file as `HYPHA_TOKEN`
 
 ### 3. Set Your Workspace
