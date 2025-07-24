@@ -1,0 +1,25 @@
+{
+    "app_settings": {
+        "version": "1.0.0",
+        "debug": false,
+        "max_workers": 4,
+        "timeout": 30
+    },
+    "ui_config": {
+        "theme": "light",
+        "language": "en",
+        "sidebar_width": 250,
+        "show_tooltips": true
+    },
+    "api_endpoints": {
+        "data_service": "/data",
+        "auth_service": "/auth",
+        "upload_service": "/upload"
+    },
+    "features": {
+        "file_upload": true,
+        "real_time_sync": false,
+        "notifications": true,
+        "analytics": false
+    }
+} 

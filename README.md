@@ -148,6 +148,166 @@ List all available services on the server:
 python -m hypha_rpc.utils.hypha_apps_cli list-services
 ```
 
+## Working with Additional Files
+
+The `--files` option allows you to include additional files (static assets, templates, configuration files, etc.) with your Hypha app installation. This is particularly useful for web apps that need CSS, HTML templates, images, or configuration data.
+
+### How File Upload Works
+
+When you specify `--files=./directory`, the CLI will:
+
+1. **Recursively scan** the directory for all files
+2. **Automatically detect** file types using MIME types
+3. **Process files** based on their type:
+   - **JSON files** (`.json`): Parsed as JSON objects
+   - **Text files** (`.txt`, `.html`, `.css`, `.js`, `.py`, etc.): Read as text strings
+   - **Binary files** (`.png`, `.jpg`, `.pdf`, etc.): Base64 encoded
+4. **Upload files** with relative paths preserved
+
+### File Processing Examples
+
+Here's how different file types are handled:
+
+#### Text Files (CSS, HTML, JavaScript, etc.)
+```css
+/* static/style.css - processed as text */
+body { font-family: Arial, sans-serif; }
+```
+→ Stored as: `{"name": "static/style.css", "content": "body { font-family: Arial, sans-serif; }", "format": "text"}`
+
+#### JSON Configuration Files
+```json
+{
+  "app_settings": {
+    "version": "1.0.0",
+    "debug": false
+  }
+}
+```
+→ Stored as: `{"name": "config.json", "content": {...}, "format": "json"}`
+
+#### Binary Files (Images, PDFs, etc.)
+```
+icon.png (binary image file)
+```
+→ Stored as: `{"name": "icon.png", "content": "iVBORw0KGgoAAAANS...", "format": "base64"}`
+
+### Directory Structure Example
+
+Create a directory structure like this:
+
+```
+my-app-files/
+├── static/
+│   ├── style.css          # Text file
+│   ├── script.js          # Text file
+│   └── icon.png           # Binary file (base64 encoded)
+├── templates/
+│   ├── index.html         # Text file
+│   └── error.html         # Text file
+├── data/
+│   ├── config.json        # JSON file (parsed as object)
+│   └── sample-data.csv    # Text file
+└── docs/
+    └── readme.txt         # Text file
+```
+
+### Installation with Files
+
+Install your app with additional files:
+
+```bash
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id my-web-app \
+  --manifest=manifest.yaml \
+  --source=main.py \
+  --files=my-app-files
+```
+
+### Accessing Files in Your App
+
+Once uploaded, you can access these files in your Hypha app. The exact method depends on your app type, but files are typically accessible through the app's file system or API.
+
+Example in Python:
+```python
+from hypha_rpc import api
+
+# Files are available in your app context
+def setup():
+    # Access uploaded files through the app's file system
+    # Implementation depends on your specific app type
+    pass
+
+api.export({"setup": setup})
+```
+
+### Real-World Use Cases
+
+#### 1. Web Application with Assets
+```bash
+# Upload web assets (CSS, JS, images)
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id my-dashboard \
+  --manifest=manifest.yaml \
+  --source=app.py \
+  --files=./web-assets
+```
+
+#### 2. Data Processing App with Configuration
+```bash
+# Upload configuration and sample data
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id data-processor \
+  --manifest=manifest.yaml \
+  --source=processor.py \
+  --files=./config-and-data
+```
+
+#### 3. Machine Learning Model with Assets
+```bash
+# Upload model files, templates, and static assets
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id ml-demo \
+  --manifest=manifest.yaml \
+  --source=model_app.py \
+  --files=./model-assets
+```
+
+### Testing File Upload
+
+You can test the file upload feature using the provided example files:
+
+```bash
+# Install app with example files
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id hello-with-files \
+  --manifest=manifest.yaml \
+  --source=main.py \
+  --files=example-files \
+  --overwrite
+```
+
+This will upload:
+- `static/style.css` (text)
+- `static/icon.png` (base64)
+- `templates/index.html` (text)
+- `data/config.json` (JSON object)
+
+### File Size and Limitations
+
+- **No explicit file size limits** in the CLI, but your Hypha server may have upload limits
+- **Large files** are automatically base64 encoded, which increases size by ~33%
+- **Consider server storage** when uploading many large files
+- **Binary files** like images, videos, or large datasets may be better served from external storage
+
+### Tips and Best Practices
+
+1. **Organize files logically** in subdirectories (static/, templates/, data/, etc.)
+2. **Use JSON files** for configuration that your app needs to parse
+3. **Keep binary files small** or consider external hosting for large assets
+4. **Test file uploads** with small examples before deploying large file sets
+5. **Use relative paths** in your HTML/CSS since the directory structure is preserved
+
 ## Testing the Demo App
 
 This repository includes a simple "Hello World" app that you can use to test the CLI.
@@ -172,11 +332,22 @@ This script will automatically:
 You can also test manually step by step:
 
 #### 1. Install the demo app:
+
+Basic installation:
 ```bash
 python -m hypha_rpc.utils.hypha_apps_cli install \
   --app-id hello-demo \
   --manifest=manifest.yaml \
   --source=main.py
+```
+
+Or with example files:
+```bash
+python -m hypha_rpc.utils.hypha_apps_cli install \
+  --app-id hello-demo \
+  --manifest=manifest.yaml \
+  --source=main.py \
+  --files=example-files
 ```
 
 #### 2. Start the app:
@@ -224,12 +395,20 @@ When you install and start an app, you'll see output like:
 
 ```
 my-hypha-app/
-├── main.py              # Demo app source code
-├── manifest.yaml        # App configuration
-├── requirements.txt     # Python dependencies
-├── test_workflow.py     # Automated test script
-├── README.md           # This file
-└── ref-hypha_apps_cli.py # Reference CLI implementation
+├── main.py                     # Demo app source code
+├── manifest.yaml               # App configuration
+├── requirements.txt            # Python dependencies
+├── test_workflow.py            # Automated test script
+├── README.md                  # This file
+├── ref-hypha_apps_cli.py      # Reference CLI implementation
+└── example-files/             # Example files for --files option
+    ├── static/
+    │   ├── style.css          # Example CSS file
+    │   └── icon.png           # Example image (binary)
+    ├── templates/
+    │   └── index.html         # Example HTML template
+    └── data/
+        └── config.json        # Example JSON configuration
 ```
 
 ## Files Explained
@@ -308,7 +487,9 @@ HYPHA_CLIENT_ID=my-custom-client-id
 
 ### Working with Files
 
-When using `--files`, you can include additional static files or resources:
+When using `--files`, you can include additional static files or resources. See the [Working with Additional Files](#working-with-additional-files) section above for comprehensive details.
+
+Quick example:
 ```bash
 python -m hypha_rpc.utils.hypha_apps_cli install \
   --app-id my-app \
@@ -317,7 +498,7 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
   --files=./assets
 ```
 
-This will include all files in the `./assets` directory with your app.
+This will recursively include all files in the `./assets` directory, automatically detecting and processing different file types (text, JSON, binary).
 
 ## Contributing
 

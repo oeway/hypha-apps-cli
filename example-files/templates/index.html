@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hypha App Template</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>{{app_title}}</h1>
+            <p>{{app_description}}</p>
+        </header>
+        
+        <main>
+            <section id="content">
+                <p>Welcome to your Hypha application!</p>
+                <button class="button" onclick="{{button_action}}">
+                    {{button_text}}
+                </button>
+            </section>
+            
+            <section id="data-display">
+                <h3>Configuration:</h3>
+                <pre id="config-data">{{config_json}}</pre>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Powered by Hypha</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Template variables will be replaced by the Hypha app
+        console.log('Hypha app template loaded');
+    </script>
+</body>
+</html> 
