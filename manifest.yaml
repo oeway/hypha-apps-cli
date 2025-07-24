@@ -1,0 +1,6 @@
+type: "web-python"
+name: "Hello World"
+version: "1.0.0"
+requirements:
+  - "hypha-rpc"
+  - "pandas"
