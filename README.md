@@ -376,10 +376,6 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
 
 This will recursively include all files in the `./assets` directory, automatically detecting and processing different file types (text, JSON, binary).
 
-## Contributing
-
-This is a demonstration repository. The reference implementation is in `ref-hypha_apps_cli.py` for educational purposes.
-
 ## License
 
 This demo is provided as-is for educational purposes.
