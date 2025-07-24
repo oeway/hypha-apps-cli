@@ -301,6 +301,10 @@ api.export({
 })
 ```
 
+Note 1: You can add other functions to the export, but `setup` is required which will be called automatically by hypha.
+You can register or run other function inside `setup`.
+Note 2: The exported function can be sync/async python function `def func` or `async def`.
+
 ### `manifest.yaml`
 App configuration file:
 ```yaml
