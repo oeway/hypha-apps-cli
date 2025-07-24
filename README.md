@@ -19,7 +19,7 @@ This CLI is for managing hypha apps and its artifact, for general artifact acces
 
 Before using the CLI, ensure you have:
 
-1. **Python 3.7+** installed
+1. **Python 3.10+** installed
 2. **hypha-rpc >= 0.20.71** installed:
    ```bash
    pip install "hypha-rpc>=0.20.71"
