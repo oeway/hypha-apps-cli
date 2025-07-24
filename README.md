@@ -290,7 +290,7 @@ Simple Hypha app that exports a `setup` function:
 ```python
 from hypha_rpc import api
 
-def setup():
+async def setup():
     print("hello")
 
 api.export({
