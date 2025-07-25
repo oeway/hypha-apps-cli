@@ -48,12 +48,10 @@ HYPHA_FORCE_LOGIN=false   # Set to true/1/yes/on to always force login for token
 
 To get your authentication token:
 
-1. Visit your Hypha server dashboard (e.g., https://hypha.aicell.io)
+1. Visit your Hypha server dashboard (e.g., https://hypha.aicell.io/public/apps/hypha-login/)
 2. Log in to your account
-3. Go to "My Workspace"
-4. Find the "Development" tab
-5. Generate a new token
-6. Add it to your `.env` file as `HYPHA_TOKEN`
+3. Expand "Get Access Token" and copy the existing token, DO NOT click "Generate New Token" (otherwise the generated token won't have admin permission)
+6. Add the token to your `.env` file as `HYPHA_TOKEN`
 
 ### 3. Set Your Workspace
 
@@ -97,6 +95,7 @@ python -m hypha_apps_cli install --app-id hello --manifest=manifest.yaml --sourc
 
 - By default, the CLI will use the `HYPHA_TOKEN` environment variable if available.
 - If you pass `--login` or set `HYPHA_FORCE_LOGIN=true`, the CLI will always perform a login to obtain a token, ignoring `HYPHA_TOKEN`.
+
 
 ### Install an App
 
