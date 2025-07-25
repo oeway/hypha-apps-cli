@@ -73,12 +73,12 @@ python -m hypha_apps_cli [COMMAND] [OPTIONS]
 - `--disable-ssl`: Disable SSL (use plain HTTP). Equivalent to setting `HYPHA_DISABLE_SSL=true` in your environment. When set, the CLI will connect to the server without SSL (`ssl=False`).
 - `--login`: Always force login to obtain a token, ignoring the `HYPHA_TOKEN` environment variable. Equivalent to setting `HYPHA_FORCE_LOGIN=true` in your environment.
 
-> **Note:** CLI flags take precedence over environment variables.
+> **Note:** CLI flags take precedence over environment variables. These options has to be added before the subcommands.
 
 ### Example usage
 
 ```bash
-python -m hypha_apps_cli install --app-id hello --manifest=manifest.yaml --source=main.py --disable-ssl
+python -m hypha_apps_cli --disable-ssl install --app-id hello --manifest=manifest.yaml --source=main.py
 ```
 
 or using environment variables:
