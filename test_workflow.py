@@ -65,23 +65,23 @@ def main():
     app_id_with_files = f"{app_id}-with-files"
     
     commands = [
-        (f"python -m hypha_rpc.utils.hypha_apps_cli install --app-id {app_id} --manifest=manifest.yaml --source=main.py --overwrite", 
+        (f"python -m hypha_apps_cli install --app-id {app_id} --manifest=manifest.yaml --source=main.py --overwrite", 
          "Installing demo app (basic)"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli start --app-id {app_id}", 
+        (f"python -m hypha_apps_cli start --app-id {app_id}", 
          "Starting the basic app"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli stop --app-id {app_id}", 
+        (f"python -m hypha_apps_cli stop --app-id {app_id}", 
          "Stopping the basic app"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli install --app-id {app_id_with_files} --manifest=manifest.yaml --source=main.py --files=example-files --overwrite", 
+        (f"python -m hypha_apps_cli install --app-id {app_id_with_files} --manifest=manifest.yaml --source=main.py --files=example-files --overwrite", 
          "Installing demo app with files"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli start --app-id {app_id_with_files}", 
+        (f"python -m hypha_apps_cli start --app-id {app_id_with_files}", 
          "Starting the app with files"),
-        ("python -m hypha_rpc.utils.hypha_apps_cli list-running", 
+        ("python -m hypha_apps_cli list-running", 
          "Listing running apps"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli stop --app-id {app_id_with_files}", 
+        (f"python -m hypha_apps_cli stop --app-id {app_id_with_files}", 
          "Stopping the app with files"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli uninstall --app-id {app_id}", 
+        (f"python -m hypha_apps_cli uninstall --app-id {app_id}", 
          "Uninstalling basic app"),
-        (f"python -m hypha_rpc.utils.hypha_apps_cli uninstall --app-id {app_id_with_files}", 
+        (f"python -m hypha_apps_cli uninstall --app-id {app_id_with_files}", 
          "Uninstalling app with files"),
     ]
     

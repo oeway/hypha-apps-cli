@@ -39,6 +39,9 @@ HYPHA_SERVER_URL=https://hypha.aicell.io # or your own server URL
 HYPHA_TOKEN=your_token_here
 HYPHA_WORKSPACE=your_workspace_name
 HYPHA_CLIENT_ID=my-hypha-app-client
+# Optional: Control SSL and login behavior
+HYPHA_DISABLE_SSL=false   # Set to true/1/yes/on to disable SSL (use plain HTTP)
+HYPHA_FORCE_LOGIN=false   # Set to true/1/yes/on to always force login for token
 ```
 
 ### 2. Get Your Authentication Token
@@ -60,8 +63,40 @@ Your workspace name should match the workspace you want to deploy apps to on you
 
 All commands use the format:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli [COMMAND] [OPTIONS]
+python -m hypha_apps_cli [COMMAND] [OPTIONS]
 ```
+
+(Make sure you have the `hypha_apps_cli` module under your current working directory).
+
+### Global Options
+
+- `--disable-ssl`: Disable SSL (use plain HTTP). Equivalent to setting `HYPHA_DISABLE_SSL=true` in your environment. When set, the CLI will connect to the server without SSL (`ssl=False`).
+- `--login`: Always force login to obtain a token, ignoring the `HYPHA_TOKEN` environment variable. Equivalent to setting `HYPHA_FORCE_LOGIN=true` in your environment.
+
+> **Note:** CLI flags take precedence over environment variables.
+
+### Example usage
+
+```bash
+python -m hypha_apps_cli install --app-id hello --manifest=manifest.yaml --source=main.py --disable-ssl
+```
+
+or using environment variables:
+
+```bash
+export HYPHA_DISABLE_SSL=true
+python -m hypha_apps_cli install --app-id hello --manifest=manifest.yaml --source=main.py
+```
+
+### SSL Behavior
+
+- By default, SSL is **enabled** (`ssl=None`), and the CLI will connect using HTTPS.
+- If you pass `--disable-ssl` or set `HYPHA_DISABLE_SSL=true`, SSL is **disabled** (`ssl=False`), and the CLI will connect using plain HTTP.
+
+### Login Behavior
+
+- By default, the CLI will use the `HYPHA_TOKEN` environment variable if available.
+- If you pass `--login` or set `HYPHA_FORCE_LOGIN=true`, the CLI will always perform a login to obtain a token, ignoring `HYPHA_TOKEN`.
 
 ### Install an App
 
@@ -69,20 +104,20 @@ Install an app to the Hypha server:
 
 ```bash
 # Basic installation
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id hello \
   --manifest=manifest.yaml \
   --source=main.py
 
 # Installation with additional files
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id my-complex-app \
   --manifest=manifest.yaml \
   --source=main.py \
   --files=./static
 
 # Installation with overwrite (replace existing app)
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id hello \
   --manifest=manifest.yaml \
   --source=main.py \
@@ -101,7 +136,7 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
 Start a previously installed app:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli start --app-id hello
+python -m hypha_apps_cli start --app-id hello
 ```
 
 ### Stop an App
@@ -109,7 +144,7 @@ python -m hypha_rpc.utils.hypha_apps_cli start --app-id hello
 Stop a running app:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli stop --app-id hello
+python -m hypha_apps_cli stop --app-id hello
 ```
 
 ### Stop All Apps
@@ -117,7 +152,7 @@ python -m hypha_rpc.utils.hypha_apps_cli stop --app-id hello
 Stop all currently running apps:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli stop-all
+python -m hypha_apps_cli stop-all
 ```
 
 ### Uninstall an App
@@ -125,7 +160,7 @@ python -m hypha_rpc.utils.hypha_apps_cli stop-all
 Remove an app from the server:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli uninstall --app-id hello
+python -m hypha_apps_cli uninstall --app-id hello
 ```
 
 ### List Apps
@@ -133,13 +168,13 @@ python -m hypha_rpc.utils.hypha_apps_cli uninstall --app-id hello
 List all installed apps:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli list-installed
+python -m hypha_apps_cli list-installed
 ```
 
 List all currently running apps:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli list-running
+python -m hypha_apps_cli list-running
 ```
 
 ### List Services
@@ -147,7 +182,7 @@ python -m hypha_rpc.utils.hypha_apps_cli list-running
 List all available services on the server:
 
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli list-services
+python -m hypha_apps_cli list-services
 ```
 
 ## Working with Additional Files
@@ -207,7 +242,7 @@ You can also test manually step by step:
 
 Basic installation:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id hello-demo \
   --manifest=manifest.yaml \
   --source=main.py
@@ -215,7 +250,7 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
 
 Or with example files:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id hello-demo \
   --manifest=manifest.yaml \
   --source=main.py \
@@ -224,22 +259,22 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
 
 #### 2. Start the app:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli start --app-id hello-demo
+python -m hypha_apps_cli start --app-id hello-demo
 ```
 
 #### 3. List running apps to verify:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli list-running
+python -m hypha_apps_cli list-running
 ```
 
 #### 4. Stop the app when done:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli stop --app-id hello-demo
+python -m hypha_apps_cli stop --app-id hello-demo
 ```
 
 #### 5. Uninstall the app:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli uninstall --app-id hello-demo
+python -m hypha_apps_cli uninstall --app-id hello-demo
 ```
 
 ## Example Output
@@ -290,7 +325,7 @@ Simple Hypha app that exports a `setup` function:
 ```python
 from hypha_rpc import api
 
-def setup():
+async def setup():
     print("hello")
 
 api.export({
@@ -300,6 +335,10 @@ api.export({
     "setup": setup
 })
 ```
+
+Note 1: You can add other functions to the export, but `setup` is required which will be called automatically by hypha.
+You can register or run other function inside `setup`.
+Note 2: The exported function can be sync/async python function `def func` or `async def`.
 
 ### `manifest.yaml`
 App configuration file:
@@ -340,12 +379,12 @@ requirements:
 
 For detailed help on any command:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli [COMMAND] --help
+python -m hypha_apps_cli [COMMAND] --help
 ```
 
 For general CLI help:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli --help
+python -m hypha_apps_cli --help
 ```
 
 ## Advanced Usage
@@ -363,7 +402,7 @@ When using `--files`, you can include additional static files or resources. See 
 
 Quick example:
 ```bash
-python -m hypha_rpc.utils.hypha_apps_cli install \
+python -m hypha_apps_cli install \
   --app-id my-app \
   --manifest=manifest.yaml \
   --source=main.py \
@@ -371,10 +410,6 @@ python -m hypha_rpc.utils.hypha_apps_cli install \
 ```
 
 This will recursively include all files in the `./assets` directory, automatically detecting and processing different file types (text, JSON, binary).
-
-## Contributing
-
-This is a demonstration repository. The reference implementation is in `ref-hypha_apps_cli.py` for educational purposes.
 
 ## License
 
