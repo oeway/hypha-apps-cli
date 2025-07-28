@@ -1,4 +1,6 @@
 .env
+.hypha_token
+
 # Python
 __pycache__/
 *.py[cod]
