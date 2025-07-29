@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv, find_dotenv
 from hypha_rpc import connect_to_server, login
 import yaml
+import glob
+
 
 load_dotenv(dotenv_path=find_dotenv(usecwd=True))
 
@@ -314,15 +316,36 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "format": "base64"
             }
 
-def collect_files(directory: str) -> List[Dict[str, Any]]:
+def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
     files = []
-    root = Path(directory).resolve()
-    for path in root.rglob("*"):
-        if path.is_file():
+
+    # Detect if it's a glob pattern
+    has_glob = any(char in path_pattern for char in "*?[]")
+
+    if has_glob:
+        matched_paths = [Path(p).resolve() for p in glob.glob(path_pattern, recursive=True) if Path(p).is_file()]
+        # Find the static base directory to compute relative paths
+        parts = Path(path_pattern).parts
+        root_parts = []
+        for part in parts:
+            if any(char in part for char in "*?[]"):
+                break
+            root_parts.append(part)
+        root = Path(*root_parts).resolve()
+    else:
+        root = Path(path_pattern).resolve()
+        matched_paths = [p for p in root.rglob("*") if p.is_file()]
+
+    for path in matched_paths:
+        try:
             relative_path = path.relative_to(root)
-            file_data = infer_format_and_content(path)
-            file_data["name"] = str(relative_path).replace("\\", "/")
-            files.append(file_data)
+        except ValueError:
+            # Fallback: use name only if relative path can't be computed
+            relative_path = path.name
+        file_data = infer_format_and_content(path)
+        file_data["name"] = str(relative_path).replace("\\", "/")
+        files.append(file_data)
+
     return files
 
 async def install_app(app_id: str, source_path: str, manifest_path: str, files_path: str, overwrite: bool = False, disable_ssl: bool = False):
