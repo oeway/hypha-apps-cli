@@ -315,34 +315,47 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "content": encoded,
                 "format": "base64"
             }
+from pathlib import Path
+from typing import List, Dict, Any
+import glob
 
 def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
     files = []
+    path = Path(path_pattern)
 
-    # Detect if it's a glob pattern
-    has_glob = any(char in path_pattern for char in "*?[]")
-
-    if has_glob:
+    if path.is_file():
+        # Case 1: It's a direct file path
+        root = path.parent.resolve()
+        matched_paths = [path.resolve()]
+    
+    elif any(char in path_pattern for char in "*?[]"):
+        # Case 2: It's a glob pattern
         matched_paths = [Path(p).resolve() for p in glob.glob(path_pattern, recursive=True) if Path(p).is_file()]
-        # Find the static base directory to compute relative paths
-        parts = Path(path_pattern).parts
+        
+        # Determine the root (static prefix before any wildcard)
+        parts = path.parts
         root_parts = []
         for part in parts:
             if any(char in part for char in "*?[]"):
                 break
             root_parts.append(part)
         root = Path(*root_parts).resolve()
-    else:
-        root = Path(path_pattern).resolve()
+
+    elif path.is_dir():
+        # Case 3: It's a directory
+        root = path.resolve()
         matched_paths = [p for p in root.rglob("*") if p.is_file()]
 
-    for path in matched_paths:
+    else:
+        raise FileNotFoundError(f"Path does not exist or is not valid: {path_pattern}")
+
+    for file_path in matched_paths:
         try:
-            relative_path = path.relative_to(root)
+            relative_path = file_path.relative_to(root)
         except ValueError:
-            # Fallback: use name only if relative path can't be computed
-            relative_path = path.name
-        file_data = infer_format_and_content(path)
+            # Fallback: use just the file name
+            relative_path = file_path.name
+        file_data = infer_format_and_content(file_path)
         file_data["name"] = str(relative_path).replace("\\", "/")
         files.append(file_data)
 
