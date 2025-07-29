@@ -386,6 +386,22 @@ async def stop_all_apps(disable_ssl: bool = False):
         print(f"🛑 Stopped app '{app.id}'.")
     await api.disconnect()
 
+
+async def stop_all_instances(app_id: str, disable_ssl: bool = False):
+    api = await connect(disable_ssl=disable_ssl)
+    controller = await api.get_service("public/server-apps")
+    running = await controller.list_running()
+    if not running:
+        print("⚠️ No apps are currently running.")
+        await api.disconnect()
+        return
+    for app in running:
+        if app.app_id != app_id:
+            continue
+        await controller.stop(app.id)
+        print(f"🛑 Stopped instance '{app.id}' of app '{app.app_id}'.")
+    await api.disconnect()
+
 async def uninstall_app(app_id: str, disable_ssl: bool = False):
     api = await connect(disable_ssl=disable_ssl)
     controller = await api.get_service("public/server-apps")
@@ -480,8 +496,12 @@ def main():
     stop = subparsers.add_parser("stop", help="Stop a running app session")
     stop.add_argument("--session-id", required=True, help="Session ID of the running app instance to stop")
     
-    stop_all = subparsers.add_parser("stop-all", help="Stop all running apps")
-    stop_all.set_defaults(func=stop_all_apps)
+    stop_all_instances_ = subparsers.add_parser("stop-all-instances", help="Stop all running instances of an app")
+    stop_all_instances_.add_argument("--app-id", required=True)
+    stop_all_instances_.set_defaults(func=stop_all_instances)
+
+    stop_all_apps_ = subparsers.add_parser("stop-all-apps", help="Stop all running apps")
+    stop_all_apps_.set_defaults(func=stop_all_apps)
 
     uninstall = subparsers.add_parser("uninstall", help="Uninstall an app")
     uninstall.add_argument("--app-id", required=True)
@@ -504,7 +524,9 @@ def main():
         asyncio.run(start_app(args.app_id, disable_ssl=disable_ssl))
     elif args.command == "stop":
         asyncio.run(stop_app(args.session_id, disable_ssl=disable_ssl))
-    elif args.command == "stop-all":
+    elif args.command == "stop-all-instances":
+        asyncio.run(stop_all_instances(args.app_id, disable_ssl=disable_ssl))
+    elif args.command == "stop-all-apps":
         asyncio.run(stop_all_apps(disable_ssl=disable_ssl))
     elif args.command == "uninstall":
         asyncio.run(uninstall_app(args.app_id, disable_ssl=disable_ssl))
