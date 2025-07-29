@@ -7,7 +7,7 @@ import argparse
 import asyncio
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv, find_dotenv
 from hypha_rpc import connect_to_server, login
 import yaml
@@ -316,48 +316,48 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "format": "base64"
             }
 
-def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
-    files = []
-    path = Path(path_pattern)
-
-    if path.is_file():
-        # Case 1: It's a direct file path
-        root = path.parent.resolve()
-        matched_paths = [path.resolve()]
+def collect_files(path_input: Union[str, Path], source_path: Optional[Union[str, Path]] = None) -> List[Dict[str, Any]]:
+    path_input = Path(path_input)
     
-    elif any(char in path_pattern for char in "*?[]"):
-        # Case 2: It's a glob pattern
-        matched_paths = [Path(p).resolve() for p in glob.glob(path_pattern, recursive=True) if Path(p).is_file()]
-        
-        # Determine the root (static prefix before any wildcard)
-        parts = path.parts
-        root_parts = []
-        for part in parts:
-            if any(char in part for char in "*?[]"):
-                break
-            root_parts.append(part)
-        root = Path(*root_parts).resolve()
-
-    elif path.is_dir():
-        # Case 3: It's a directory
-        root = path.resolve()
-        matched_paths = [p for p in root.rglob("*") if p.is_file()]
-
+    # Resolve source root
+    if source_path:
+        source_path = Path(source_path).resolve()
+        source_root = source_path.parent if source_path.is_file() else source_path
     else:
-        raise FileNotFoundError(f"Path does not exist or is not valid: {path_pattern}")
+        source_root = None
 
-    for file_path in matched_paths:
-        try:
-            relative_path = file_path.relative_to(root)
-        except ValueError:
-            # Fallback: use just the file name
-            relative_path = file_path.name
-        file_data = infer_format_and_content(file_path)
-        file_data["name"] = str(relative_path).replace("\\", "/")
-        files.append(file_data)
+    files = []
+
+    # If it's a single file
+    if path_input.is_file():
+        file_data = infer_format_and_content(path_input)
+        rel_path = path_input.relative_to(source_root) if source_root else path_input.name
+        file_data["name"] = str(rel_path).replace("\\", "/")
+        return [file_data]
+
+    # If it's a glob pattern
+    if any(c in path_input.name for c in "*?[]"):
+        base_dir = path_input.parent.resolve()
+        pattern = path_input.name
+        matching_paths = list(base_dir.glob(pattern))
+    else:
+        base_dir = path_input.resolve()
+        matching_paths = list(base_dir.rglob("*"))
+
+    for path in matching_paths:
+        if path.is_file():
+            file_data = infer_format_and_content(path)
+            if source_root:
+                rel_path = path.relative_to(source_root)
+            else:
+                rel_path = path.relative_to(base_dir)
+            file_data["name"] = str(rel_path).replace("\\", "/")
+            files.append(file_data)
 
     return files
 
+
+    return files
 async def install_app(app_id: str, source_path: str, manifest_path: str, files_path: str, overwrite: bool = False, disable_ssl: bool = False):
     api = await connect(disable_ssl=disable_ssl)
     controller = await api.get_service("public/server-apps")
@@ -365,7 +365,7 @@ async def install_app(app_id: str, source_path: str, manifest_path: str, files_p
     with open(source_path, "r", encoding="utf-8") as f:
         source = f.read()
     manifest = load_manifest(manifest_path)
-    files = collect_files(files_path) if files_path else []
+    files = collect_files(path_input=files_path, source_path=source_path) if files_path else []
 
     print(f"📦 Installing app '{app_id}' from {source_path} with manifest {manifest_path}...")
     await controller.install(
