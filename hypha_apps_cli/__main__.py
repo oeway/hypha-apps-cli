@@ -315,9 +315,6 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "content": encoded,
                 "format": "base64"
             }
-from pathlib import Path
-from typing import List, Dict, Any
-import glob
 
 def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
     files = []
