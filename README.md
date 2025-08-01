@@ -201,6 +201,15 @@ python -m hypha_apps_cli stop --session-id "ws-user-auth0|sdf229udfj234sf/_rapp_
 
 **Note:** You need the `session_id` (not `app_id`) to stop a specific running instance. Get the session ID from `list-running` command.
 
+### Get Logs
+
+Get the logs for the app session:
+```bash
+python -m hypha_apps_cli logs --session-id "ws-user-auth0|sdf229udfj234sf/_rapp_cactus-tugboat-90335059__rlb"
+```
+
+**Note:** You need the `session_id` (not `app_id`) to get the logs of a running instance.
+
 ### Stop All Apps
 
 Stop all currently running apps (stops all sessions regardless of session ID):
