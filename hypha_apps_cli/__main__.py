@@ -436,6 +436,15 @@ async def list_services(disable_ssl: bool = False):
         print(f"  {json.dumps(svc, indent=2)}")
     await api.disconnect()
 
+async def get_logs(session_id: str, disable_ssl: bool = False):
+    api = await connect(disable_ssl=disable_ssl)
+    controller = await api.get_service("public/server-apps")
+    logs = await controller.get_logs(session_id)
+    print(f"🔍 Logs for session '{session_id}':")
+    # print using formated json
+    print(json.dumps(logs, indent=2))
+    await api.disconnect()
+
 async def login_command(disable_ssl: bool = False):
     """Perform interactive login and cache token."""
     server_url = os.getenv("HYPHA_SERVER_URL")
@@ -496,6 +505,9 @@ def main():
     stop = subparsers.add_parser("stop", help="Stop a running app session")
     stop.add_argument("--session-id", required=True, help="Session ID of the running app instance to stop")
     
+    logs = subparsers.add_parser("logs", help="Get logs for a running app session")
+    logs.add_argument("--session-id", required=True, help="Session ID of the running app instance to get logs for")
+    
     stop_all_instances_ = subparsers.add_parser("stop-all-instances", help="Stop all running instances of an app")
     stop_all_instances_.add_argument("--app-id", required=True)
     stop_all_instances_.set_defaults(func=stop_all_instances)
@@ -540,6 +552,8 @@ def main():
         asyncio.run(list_apps(running=True, disable_ssl=disable_ssl))
     elif args.command == "list-services":
         asyncio.run(list_services(disable_ssl=disable_ssl))
+    elif args.command == "logs":
+        asyncio.run(get_logs(args.session_id, disable_ssl=disable_ssl))
     else:
         parser.print_help()
 
