@@ -601,7 +601,7 @@ def main():
     install.add_argument("--app-id", required=True)
     install.add_argument("--source", required=True)
     install.add_argument("--manifest", required=True)
-    install.add_argument("--files", required=False, nargs='+', help="One or more directories containing files to include")
+    install.add_argument("--files", required=False, action='append', help="One or more directories containing files to include")
     install.add_argument("--overwrite", action="store_true")
 
     start = subparsers.add_parser("start", help="Start an app")
