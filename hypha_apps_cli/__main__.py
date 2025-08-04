@@ -12,6 +12,11 @@ from dotenv import load_dotenv, find_dotenv
 from hypha_rpc import connect_to_server, login
 import yaml
 import glob
+from pathlib import PurePosixPath
+
+DEFAULT_IGNORED_DIRS = {"__pycache__", ".git", ".venv", ".idea", ".pytest_cache", ".mypy_cache", "build", "dist", "__pypackages__"}
+DEFAULT_IGNORED_FILES = {".DS_Store", ".gitignore", ".gitattributes"}
+DEFAULT_IGNORED_SUFFIXES = {".pyc", ".pyo", ".swp", ".tmp", ".bak"}
 
 
 load_dotenv(dotenv_path=find_dotenv(usecwd=True))
@@ -326,6 +331,28 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "format": "base64"
             }
 
+def _should_ignore(path: Path) -> bool:
+    """
+    Determine if a file or directory should be ignored based on name or suffix.
+    
+    Args:
+        path: Path to evaluate
+    
+    Returns:
+        True if the file or directory should be skipped
+    """
+    name = path.name
+
+    # Ignore files or dirs by exact name
+    if name in DEFAULT_IGNORED_FILES or name in DEFAULT_IGNORED_DIRS:
+        return True
+
+    # Ignore by suffix
+    if any(str(name).endswith(suffix) for suffix in DEFAULT_IGNORED_SUFFIXES):
+        return True
+
+    return False
+
 
 def _is_python_package(directory: Path) -> bool:
     """
@@ -340,41 +367,30 @@ def _is_python_package(directory: Path) -> bool:
     return any(directory.glob("**/__init__.py"))
 
 
+
 def _process_file(path: Path, base_path: Path, module_name: str, is_package: bool) -> Optional[Dict[str, Any]]:
     """
     Process a single file and create its file data dictionary.
-    
-    Args:
-        path: Path to the file
-        base_path: Base path for relative path calculation
-        module_name: Name of the module
-        is_package: Whether the directory is a Python package
-        
-    Returns:
-        File data dictionary or None if the file should be skipped
     """
-    # Skip __init__.py files as requested
-    if path.name == "__init__.py":
-        return None
-        
     try:
         relative_path = path.relative_to(base_path)
         file_data = infer_format_and_content(path)
-        
-        # Always prefix with module name for consistency
-        standard_path = f"{module_name}/{str(relative_path).replace('\\', '/')}" 
+
+        # Standardize path
+        standard_path = f"{module_name}/{PurePosixPath(relative_path)}"
         file_data["name"] = standard_path
-        
-        # For Python files, add import_path
+
         if path.suffix == ".py":
-            # Create import path (e.g., module_name.submodule.file)
-            import_path = f"{module_name}.{str(relative_path).replace('/', '.').replace('\\', '.').replace('.py', '')}"
+            # Decide base import root
+            base = module_name if is_package else ""
+            import_suffix = PurePosixPath(relative_path).with_suffix('').as_posix().replace('/', '.')
+            import_path = f"{base}.{import_suffix}".strip('.')
             file_data["import_path"] = import_path
-        
+
         return file_data
     except ValueError:
-        # Skip files that are not relative to the base path
         return None
+
 
 
 def _collect_files_from_glob(base_path: Path, pattern: str) -> List[Dict[str, Any]]:
@@ -394,6 +410,8 @@ def _collect_files_from_glob(base_path: Path, pattern: str) -> List[Dict[str, An
     
     # Use glob to find matching files
     for path in base_path.glob(pattern):
+        if _should_ignore(path):
+            continue
         if path.is_file():
             file_data = _process_file(path, base_path, module_name, is_package)
             if file_data:
@@ -418,6 +436,8 @@ def _collect_files_from_directory(directory: Path) -> List[Dict[str, Any]]:
     
     # Recursively find all files
     for path in directory.rglob("*"):
+        if _should_ignore(path):
+            continue
         if path.is_file():
             file_data = _process_file(path, directory, module_name, is_package)
             if file_data:
@@ -428,27 +448,38 @@ def _collect_files_from_directory(directory: Path) -> List[Dict[str, Any]]:
 
 def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
     """
-    Collect files from a directory or using a glob pattern.
+    Collect files from a directory, using a glob pattern, or from a single file.
     
     Args:
-        path_pattern: Directory path or path with glob pattern (e.g., 'dir/subdir/*.py')
+        path_pattern: Directory path, path with glob pattern, or a single file path
     
     Returns:
         List of file data dictionaries
     """
-    # Check if the path contains glob pattern characters
-    has_glob_pattern = any(c in path_pattern for c in '*?[]')
-    
-    if has_glob_pattern:
-        # Handle as a glob pattern
+    path = Path(path_pattern).resolve()
+
+    # Handle glob pattern
+    if any(c in path_pattern for c in '*?[]'):
         base_dir = os.path.dirname(path_pattern) or '.'
         base_path = Path(base_dir).resolve()
         pattern = os.path.basename(path_pattern)
         return _collect_files_from_glob(base_path, pattern)
-    else:
-        # Handle as a regular directory
-        directory = Path(path_pattern).resolve()
-        return _collect_files_from_directory(directory)
+
+    # Handle direct file
+    if path.is_file():
+        module_name = path.stem  # e.g., script.py → script
+        base_path = path.parent
+        is_package = False
+        file_data = _process_file(path, base_path, module_name, is_package)
+        return [file_data] if file_data else []
+
+    # Handle directory
+    if path.is_dir():
+        return _collect_files_from_directory(path)
+
+    # Fallback: path doesn't exist
+    return []
+
 
 async def install_app(app_id: str, source_path: str, manifest_path: str, files_path: str, overwrite: bool = False, disable_ssl: bool = False):
     api = await connect(disable_ssl=disable_ssl)
@@ -461,8 +492,8 @@ async def install_app(app_id: str, source_path: str, manifest_path: str, files_p
     # Process multiple directories if provided
     files = []
     if files_path:
-        for directory in files_path:
-            files.extend(collect_files(directory))
+        for path in files_path:
+            files.extend(collect_files(path))
     
     print(f"📦 Installing app '{app_id}' from {source_path} with manifest {manifest_path}...")
     await controller.install(
