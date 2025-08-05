@@ -55,7 +55,6 @@ Create a `.env` file in your project root with the following configuration:
 HYPHA_SERVER_URL=https://hypha.aicell.io # or your own server URL
 # HYPHA_TOKEN=your_token_here
 HYPHA_WORKSPACE=your_workspace_name
-HYPHA_CLIENT_ID=my-hypha-app-client
 # Optional: Control SSL behavior
 HYPHA_DISABLE_SSL=false   # Set to true/1/yes/on to disable SSL (use plain HTTP)
 ```
@@ -560,13 +559,6 @@ python -m hypha_apps_cli --help
 ```
 
 ## Advanced Usage
-
-### Custom Client ID
-
-You can set a custom client ID in your `.env` file:
-```bash
-HYPHA_CLIENT_ID=my-custom-client-id
-```
 
 ### Working with Files
 

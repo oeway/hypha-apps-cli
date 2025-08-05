@@ -7,10 +7,17 @@ import argparse
 import asyncio
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv, find_dotenv
 from hypha_rpc import connect_to_server, login
 import yaml
+import glob
+from pathlib import PurePosixPath
+
+DEFAULT_IGNORED_DIRS = {"__pycache__", ".git", ".venv", ".idea", ".pytest_cache", ".mypy_cache", "build", "dist", "__pypackages__"}
+DEFAULT_IGNORED_FILES = {".DS_Store", ".gitignore", ".gitattributes", ".env", ".env.local", ".env.development", ".env.production"}
+DEFAULT_IGNORED_SUFFIXES = {".pyc", ".pyo", ".swp", ".tmp", ".bak"}
+
 
 load_dotenv(dotenv_path=find_dotenv(usecwd=True))
 
@@ -289,7 +296,17 @@ def load_manifest(manifest_path: str) -> Dict[str, Any]:
         except json.JSONDecodeError:
             return yaml.safe_load(content)
 
+
 def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
+    """
+    Infer the format and content of a file.
+    
+    Args:
+        filepath: Path to the file
+        
+    Returns:
+        Dictionary with name, content, and format
+    """
     mime_type, _ = mimetypes.guess_type(filepath)
     if mime_type == "application/json":
         with open(filepath, "r", encoding="utf-8") as f:
@@ -314,16 +331,155 @@ def infer_format_and_content(filepath: Path) -> Dict[str, Any]:
                 "format": "base64"
             }
 
-def collect_files(directory: str) -> List[Dict[str, Any]]:
+def _should_ignore(path: Path) -> bool:
+    """
+    Determine if a file or directory should be ignored based on name or suffix.
+    
+    Args:
+        path: Path to evaluate
+    
+    Returns:
+        True if the file or directory should be skipped
+    """
+    name = path.name
+
+    # Ignore files or dirs by exact name
+    if name in DEFAULT_IGNORED_FILES or name in DEFAULT_IGNORED_DIRS:
+        return True
+
+    # Ignore by suffix
+    if any(str(name).endswith(suffix) for suffix in DEFAULT_IGNORED_SUFFIXES):
+        return True
+
+    return False
+
+
+def _is_python_package(directory: Path) -> bool:
+    """
+    Check if a directory is a Python package (contains __init__.py files).
+    
+    Args:
+        directory: Path to the directory to check
+        
+    Returns:
+        True if the directory is a Python package, False otherwise
+    """
+    return any(directory.glob("**/__init__.py"))
+
+
+
+def _process_file(path: Path, base_path: Path, module_name: str, is_package: bool) -> Optional[Dict[str, Any]]:
+    """
+    Process a single file and create its file data dictionary.
+    """
+    try:
+        relative_path = path.relative_to(base_path)
+        file_data = infer_format_and_content(path)
+
+        # Standardize path
+        standard_path = f"{module_name}/{PurePosixPath(relative_path)}"
+        file_data["name"] = standard_path
+
+        if path.suffix == ".py":
+            # Decide base import root
+            base = module_name if is_package else ""
+            import_suffix = PurePosixPath(relative_path).with_suffix('').as_posix().replace('/', '.')
+            import_path = f"{base}.{import_suffix}".strip('.')
+            file_data["import_path"] = import_path
+
+        return file_data
+    except ValueError:
+        return None
+
+
+
+def _collect_files_from_glob(base_path: Path, pattern: str) -> List[Dict[str, Any]]:
+    """
+    Collect files matching a glob pattern.
+    
+    Args:
+        base_path: Base directory path
+        pattern: Glob pattern to match files
+        
+    Returns:
+        List of file data dictionaries
+    """
     files = []
-    root = Path(directory).resolve()
-    for path in root.rglob("*"):
+    module_name = base_path.name
+    is_package = _is_python_package(base_path)
+    
+    # Use glob to find matching files
+    for path in base_path.glob(pattern):
+        if _should_ignore(path):
+            continue
         if path.is_file():
-            relative_path = path.relative_to(root)
-            file_data = infer_format_and_content(path)
-            file_data["name"] = str(relative_path).replace("\\", "/")
-            files.append(file_data)
+            file_data = _process_file(path, base_path, module_name, is_package)
+            if file_data:
+                files.append(file_data)
+                
     return files
+
+
+def _collect_files_from_directory(directory: Path) -> List[Dict[str, Any]]:
+    """
+    Collect all files recursively from a directory.
+    
+    Args:
+        directory: Directory path
+        
+    Returns:
+        List of file data dictionaries
+    """
+    files = []
+    module_name = directory.name
+    is_package = _is_python_package(directory)
+    
+    # Recursively find all files
+    for path in directory.rglob("*"):
+        if _should_ignore(path):
+            continue
+        if path.is_file():
+            file_data = _process_file(path, directory, module_name, is_package)
+            if file_data:
+                files.append(file_data)
+                
+    return files
+
+
+def collect_files(path_pattern: str) -> List[Dict[str, Any]]:
+    """
+    Collect files from a directory, using a glob pattern, or from a single file.
+    
+    Args:
+        path_pattern: Directory path, path with glob pattern, or a single file path
+    
+    Returns:
+        List of file data dictionaries
+    """
+    path = Path(path_pattern).resolve()
+
+    # Handle glob pattern
+    if any(c in path_pattern for c in '*?[]'):
+        base_dir = os.path.dirname(path_pattern) or '.'
+        base_path = Path(base_dir).resolve()
+        pattern = os.path.basename(path_pattern)
+        return _collect_files_from_glob(base_path, pattern)
+
+    # Handle direct file
+    if path.is_file():
+        module_name = path.stem  # e.g., script.py → script
+        base_path = path.parent
+        is_package = False
+        file_data = _process_file(path, base_path, module_name, is_package)
+        return [file_data] if file_data else []
+
+    # Handle directory
+    if path.is_dir():
+        return _collect_files_from_directory(path)
+
+    # Fallback: path doesn't exist
+    return []
+
 
 async def install_app(app_id: str, source_path: str, manifest_path: str, files_path: str, overwrite: bool = False, disable_ssl: bool = False):
     api = await connect(disable_ssl=disable_ssl)
@@ -332,8 +488,13 @@ async def install_app(app_id: str, source_path: str, manifest_path: str, files_p
     with open(source_path, "r", encoding="utf-8") as f:
         source = f.read()
     manifest = load_manifest(manifest_path)
-    files = collect_files(files_path) if files_path else []
-
+    
+    # Process multiple directories if provided
+    files = []
+    if files_path:
+        for path in files_path:
+            files.extend(collect_files(path))
+    
     print(f"📦 Installing app '{app_id}' from {source_path} with manifest {manifest_path}...")
     await controller.install(
         app_id=app_id,
@@ -449,7 +610,7 @@ async def login_command(disable_ssl: bool = False):
     """Perform interactive login and cache token."""
     server_url = os.getenv("HYPHA_SERVER_URL")
     workspace = os.getenv("HYPHA_WORKSPACE")
-    client_id = os.getenv("HYPHA_CLIENT_ID", "hypha-apps-cli")
+
 
     if not all([server_url, workspace]):
         print("❌ Missing environment variables. Set HYPHA_SERVER_URL, HYPHA_WORKSPACE", file=sys.stderr)
@@ -496,7 +657,7 @@ def main():
     install.add_argument("--app-id", required=True)
     install.add_argument("--source", required=True)
     install.add_argument("--manifest", required=True)
-    install.add_argument("--files", required=False)
+    install.add_argument("--files", required=False, action='append', help="One or more directories containing files to include")
     install.add_argument("--overwrite", action="store_true")
 
     start = subparsers.add_parser("start", help="Start an app")
