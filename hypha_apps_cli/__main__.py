@@ -15,7 +15,7 @@ import glob
 from pathlib import PurePosixPath
 
 DEFAULT_IGNORED_DIRS = {"__pycache__", ".git", ".venv", ".idea", ".pytest_cache", ".mypy_cache", "build", "dist", "__pypackages__"}
-DEFAULT_IGNORED_FILES = {".DS_Store", ".gitignore", ".gitattributes"}
+DEFAULT_IGNORED_FILES = {".DS_Store", ".gitignore", ".gitattributes", ".env", ".env.local", ".env.development", ".env.production"}
 DEFAULT_IGNORED_SUFFIXES = {".pyc", ".pyo", ".swp", ".tmp", ".bak"}
 
 
