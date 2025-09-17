@@ -1,1 +1,3 @@
 hypha-rpc>=0.20.71
+dotenv
+pyaml

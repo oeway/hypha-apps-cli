@@ -167,6 +167,7 @@ async def connect(disable_ssl: bool = False) -> Any:
     server_url = os.getenv("HYPHA_SERVER_URL")
     workspace = os.getenv("HYPHA_WORKSPACE")
     client_id = os.getenv("HYPHA_CLIENT_ID", "hypha-apps-cli")
+    additional_headers = os.getenv("ADDITIONAL_HEADERS", "{}")
 
     # ssl should be False (to disable SSL) or None (to enable SSL)
     ssl = False if disable_ssl else None
@@ -205,6 +206,7 @@ async def connect(disable_ssl: bool = False) -> Any:
         "token": token,
         "workspace": workspace,
         "ssl": ssl,
+        "additional_headers": json.loads(additional_headers)
     })
 
 async def debug_token_info():
